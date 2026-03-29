@@ -1,23 +1,23 @@
-require('dotenv').config();
-const nodemailer = require('nodemailer');
+require("dotenv").config();
+const nodemailer = require("nodemailer");
 
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  service: "gmail",
   auth: {
-    type: 'OAuth2',
+    type: "OAuth2",
     user: process.env.EMAIL_USER,
     clientId: process.env.CLIENT_ID,
     clientSecret: process.env.CLIENT_SECRET,
     refreshToken: process.env.REFRESH_TOKEN,
   },
 });
- 
+
 // Verify the connection configuration
 transporter.verify((error, success) => {
   if (error) {
-    console.error('Error connecting to email server:', error);
+    console.error("Error connecting to email server:", error);
   } else {
-    console.log('Email server is ready to send messages');
+    console.log("Email server is ready to send messages");
   }
 });
 
@@ -32,19 +32,32 @@ const sendEmail = async (to, subject, text, html) => {
       html, // html body
     });
 
-    console.log('Message sent: %s', info.messageId);
-    console.log('Preview URL: %s', nodemailer.getTestMessageUrl(info));
+    console.log("Message sent: %s", info.messageId);
+    console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
   } catch (error) {
-    console.error('Error sending email:', error);
+    console.error("Error sending email:", error);
   }
 };
 
-async function sendRegistrationEmail(userMail,name){
-  const subject='Welcome to Ledger!';
-  const text=`Dear ${name},\n\nWelcome to Ledger! We are thrilled to have you on board. Thank you for choosing us for your banking needs.\n\nBest regards,\nThe Ledger Team`;
-  const html=`<p>Dear ${name},</p><p>Welcome to Ledger! We are thrilled to have you on board. Thank you for choosing us for your banking needs.</p><p>Best regards,<br>The Ledger Team</p>`;  
+async function sendRegistrationEmail(userMail, name) {
+  const subject = "Welcome to Ledger!";
+  const text = `Dear ${name},\n\nWelcome to Ledger! We are thrilled to have you on board. Thank you for choosing us for your banking needs.\n\nBest regards,\nThe Ledger Team`;
+  const html = `<p>Dear ${name},</p><p>Welcome to Ledger! We are thrilled to have you on board. Thank you for choosing us for your banking needs.</p><p>Best regards,<br>The Ledger Team</p>`;
   await sendEmail(userMail, subject, text, html);
 }
 
-module.exports={sendRegistrationEmail}
+async function sendTransactionEmail(userMail, name, amount, toAccount) {
+  const subject = "Transaction Successful!";
+  const text = `Dear ${name},\n\nYour transaction of $${amount} to account ${toAccount} was successful. Thank you for using Ledger.\n\nBest regards,\nThe Ledger Team`;
+  const html = `<p>Dear ${name},</p><p>Your transaction of $${amount} to account ${toAccount} was successful. Thank you for using Ledger.</p><p>Best regards,<br>The Ledger Team</p>`;
+  await sendEmail(userMail, subject, text, html);
+}
 
+async function sendTransactionFailureEmail(userMail, name, amount, toAccount) {
+  const subject = "Transaction Failed!";
+  const text = `Dear ${name},\n\nWe regret to inform you that your transaction of $${amount} to account ${toAccount} has failed. Please check your account balance and try again.\n\nBest regards,\nThe Ledger Team`;
+  const html = `<p>Dear ${name},</p><p>We regret to inform you that your transaction of $${amount} to account ${toAccount} has failed. Please check your account balance and try again.</p><p>Best regards,<br>The Ledger Team</p>`;
+  await sendEmail(userMail, subject, text, html);
+}
+
+module.exports = { sendRegistrationEmail, sendTransactionEmail, sendTransactionFailureEmail };
