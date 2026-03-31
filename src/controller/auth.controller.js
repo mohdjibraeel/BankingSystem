@@ -1,6 +1,7 @@
 const userModel = require("../models/user.model");
 const jwt = require("jsonwebtoken");
-const emailService=require("../services/email.service");
+const emailService = require("../services/email.service");
+const tokenBlacklistModel = require("../models/blacklist.model");
 
 async function userRegisterController(req, res) {
   const { email, password, name } = req.body;
@@ -29,24 +30,24 @@ async function userRegisterController(req, res) {
     },
     token,
   });
-  await emailService.sendRegistrationEmail(user.email,user.name);
+  await emailService.sendRegistrationEmail(user.email, user.name);
 }
 
-async function userLoginController(req,res){
-  const { email, password} = req.body;
-  const user =await userModel.findOne({email:email}).select("+password");
-  if(!user){
+async function userLoginController(req, res) {
+  const { email, password } = req.body;
+  const user = await userModel.findOne({ email: email }).select("+password");
+  if (!user) {
     return res.status(404).json({
-      message:"Invalid emial or password",
-      status:"failed"
-    })
+      message: "Invalid emial or password",
+      status: "failed",
+    });
   }
-  const isMatch=await user.comparePassword(password);
-  if(!isMatch){
+  const isMatch = await user.comparePassword(password);
+  if (!isMatch) {
     return res.status(404).json({
-      message:"Invalid emial or password",
-      status:"failed"
-    })
+      message: "Invalid emial or password",
+      status: "failed",
+    });
   }
   const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
     expiresIn: "3d",
@@ -61,4 +62,19 @@ async function userLoginController(req,res){
     token,
   });
 }
-module.exports = { userRegisterController,userLoginController };
+
+async function userLogoutController(req, res) {
+  const token =
+    req.cookies.token || req.headers["authorization"]?.split(" ")[1];
+  if (!token) {
+    return res.status(400).json({
+      message: "ALready logged out",
+    });
+  }
+  res.clearCookie("token");
+  await tokenBlacklistModel.create({ token: token });
+   res.status(200).json({
+     message: "Logged out successfully",
+   });
+}
+module.exports = { userRegisterController, userLoginController, userLogoutController };
